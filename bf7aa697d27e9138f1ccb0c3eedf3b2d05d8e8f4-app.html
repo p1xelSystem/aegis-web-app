@@ -1,0 +1,1077 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1622">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Aegis">
+<title>Aegis</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b1622;
+  --panel: rgba(11, 22, 34, .92);
+  --bubble: #1e3d58;
+  --line: #2c5070;
+  --text: #dbe7f1;
+  --muted: #8fa5b5;
+  --accent: #336794;
+  --accent-ink: #eaf3fa;
+  --danger: #f4708a;
+  --font-display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+html { -webkit-text-size-adjust: none; text-size-adjust: none; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.5 -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* Header */
+header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: calc(env(safe-area-inset-top) + 10px) 14px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  z-index: 2;
+}
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand .mark { color: var(--accent); display: inline-flex; }
+.brand h1 {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.brand .status {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+  animation: pulse 2.4s infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+.hactions { display: flex; gap: 8px; }
+.iconbtn {
+  width: 38px; height: 38px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .15s, border-color .15s, transform .1s;
+}
+.iconbtn:hover, .iconbtn:focus-visible { color: var(--accent); border-color: var(--accent); }
+.iconbtn:active { transform: scale(.94); }
+.iconbtn.danger:hover, .iconbtn.danger:focus-visible { color: var(--danger); border-color: var(--danger); }
+
+/* Feed */
+#scroller {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 18px 14px 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+#feed { display: flex; flex-direction: column; }
+.folderbar {
+  flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  padding: 6px 14px; border-bottom: 1px solid var(--line); font-size: 14px;
+}
+.folderbar[hidden] { display: none; }
+.folderbar label { color: var(--text); }
+.folderbar select, #retrySync {
+  min-height: 44px; padding: 0 10px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--text); font: inherit; border-radius: 10px;
+}
+.folderbar select:focus-visible { outline: 2px solid var(--gold); }
+#syncStatus { color: var(--muted); font-size: 13px; flex: 1; min-width: 100px; }
+#syncStatus[data-error="true"] { color: var(--danger); }
+#retrySync { cursor: pointer; }
+#accountName { overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+.iconbtn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Empty state */
+.empty {
+  height: 100%;
+  min-height: 46vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+  padding: 20px;
+}
+.empty .mark { color: var(--accent); opacity: .9; }
+.empty h2 {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: .22em;
+  color: var(--text);
+}
+.empty .tag { color: var(--muted); font-size: 15px; max-width: 30ch; line-height: 1.6; }
+.empty .hint {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .06em;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 14px;
+  margin-top: 6px;
+}
+
+/* Messages */
+.msg { display: flex; margin-bottom: 14px; }
+.msg.user { justify-content: flex-end; }
+.bubble {
+  max-width: 84%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+.msg.user .bubble {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 500;
+  border-bottom-right-radius: 5px;
+}
+.msg.aegis { align-items: flex-end; flex-direction: column; }
+.msg.aegis .who {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .18em;
+  color: var(--accent);
+  margin: 0 4px 4px;
+  align-self: flex-start;
+}
+.msg.aegis .bubble {
+  background: var(--bubble);
+  border: 1px solid var(--line);
+  border-bottom-left-radius: 5px;
+}
+.bubble code {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  background: #142c42;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+.msg.user .bubble code { background: rgba(234,243,250,.16); border-color: rgba(234,243,250,.28); }
+.bubble pre {
+  background: #142c42;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  margin: 8px 0 4px;
+  max-width: 100%;
+}
+.bubble pre code { background: none; border: none; padding: 0; font-size: 13px; line-height: 1.5; }
+.bubble a { color: var(--accent); }
+
+/* Typing indicator */
+.dots { display: inline-flex; gap: 5px; padding: 6px 2px; }
+.dots i {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--muted);
+  animation: blip 1.2s infinite;
+}
+.dots i:nth-child(2) { animation-delay: .15s; }
+.dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes blip { 0%, 60%, 100% { opacity: .25; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+
+/* System notes */
+.note {
+  align-self: center;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--danger);
+  text-align: center;
+  max-width: 34ch;
+  padding: 4px 10px;
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+/* Composer */
+#composer {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 10px 12px calc(env(safe-area-inset-bottom) + 10px);
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  z-index: 2;
+}
+#input {
+  flex: 1;
+  font-size: 16px;
+  line-height: 1.45;
+  font-family: inherit;
+  color: var(--text);
+  background: #0e1c2c;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  padding: 11px 15px;
+  outline: none;
+  resize: none;
+  max-height: 140px;
+  min-height: 44px;
+  transition: border-color .15s;
+}
+#input:focus { border-color: var(--accent); }
+#input::placeholder { color: #a8bdc9; }
+#send {
+  flex: none;
+  width: 44px; height: 44px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform .1s, opacity .15s, background .15s;
+}
+#send:active { transform: scale(.92); }
+#send:disabled { opacity: .35; cursor: default; }
+
+/* Confirm sheet */
+#sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(2,4,4,.6);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s;
+}
+#sheet.open { opacity: 1; pointer-events: auto; }
+.sheet-card {
+  width: 100%;
+  max-width: 760px;
+  background: var(--bubble);
+  border: 1px solid var(--line);
+  border-radius: 22px 22px 0 0;
+  padding: 24px 20px calc(env(safe-area-inset-bottom) + 20px);
+  transform: translateY(30px);
+  transition: transform .18s;
+}
+#sheet.open .sheet-card { transform: translateY(0); }
+.sheet-card h3 {
+  font-family: var(--font-display);
+  font-size: 17px;
+  letter-spacing: .04em;
+  margin-bottom: 8px;
+}
+.sheet-card p { color: var(--muted); font-size: 14px; line-height: 1.55; margin-bottom: 20px; }
+.sheet-actions { display: flex; gap: 10px; }
+.sheet-actions button {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  border-radius: 13px;
+  padding: 14px;
+  cursor: pointer;
+  transition: transform .1s;
+}
+.sheet-actions button:active { transform: scale(.98); }
+#cancelWipe {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+#wipe {
+  background: var(--danger);
+  color: #2a060f;
+  border: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">
+      <span class="mark">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l7.5 3v5.8c0 4.6-3.2 7.9-7.5 10.2C7.7 19.2 4.5 15.9 4.5 11.3V5.5l7.5-3z"/><path d="M9 11.8l2.2 2.2 4-4.5"/></svg>
+      </span>
+      <h1>AEGIS</h1>
+      <span class="status" id="accountName" aria-label="Signed in as __AEGIS_USERNAME__">__AEGIS_USERNAME__</span>
+    </div>
+    <div class="hactions">
+      <button class="iconbtn danger" id="clearBtn" aria-label="Clear history" title="Clear history">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>
+      </button>
+      <button class="iconbtn" id="logoutBtn" aria-label="Log out" title="Log out">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="folderbar" id="folderBar">
+    <label for="folder">Chat folder</label>
+    <select id="folder">
+      <option value="folder-1">Folder 1</option>
+      <option value="folder-2">Folder 2</option>
+      <option value="folder-3">Folder 3</option>
+    </select>
+    <span id="syncStatus" role="status"></span>
+    <button type="button" id="retrySync" hidden>Retry sync</button>
+  </div>
+
+  <main id="scroller">
+    <div id="feed"></div>
+  </main>
+
+  <div id="composer">
+    <textarea id="input" rows="1" maxlength="8000" placeholder="Talk to Aegis&hellip;" aria-label="Message to Aegis"></textarea>
+    <button id="send" aria-label="Send message" title="Send" disabled>
+      <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+    </button>
+  </div>
+</div>
+
+<div id="sheet" aria-hidden="true" inert>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="wipeTitle">
+    <h3 id="wipeTitle">Wipe the transcript?</h3>
+    <p>This clears the messages in <strong id="wipeFolder"></strong> for your account on every device. Your other folders are not affected.</p>
+    <div class="sheet-actions">
+      <button id="cancelWipe" type="button">Keep it</button>
+      <button id="wipe" type="button">Wipe it</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var scroller = document.getElementById('scroller');
+  var feed = document.getElementById('feed');
+  var input = document.getElementById('input');
+  var sendBtn = document.getElementById('send');
+  var clearBtn = document.getElementById('clearBtn');
+  var logoutBtn = document.getElementById('logoutBtn');
+  var sheet = document.getElementById('sheet');
+  var wipeBtn = document.getElementById('wipe');
+  var cancelWipe = document.getElementById('cancelWipe');
+  var folderInput = document.getElementById('folder');
+  var status = document.getElementById('syncStatus');
+  var retrySync = document.getElementById('retrySync');
+
+  var messages = [];
+  var folder = folderInput.value;
+  var version = null;
+  var wipeVersion = null;
+  var pending = false;
+  var ready = false;
+  var ticket = 0;
+  var loading = false;
+  var drafts = Object.create(null);
+
+  /* ---------- rendering ---------- */
+
+  function esc(s) {
+    return s
+      .replace(/&/g, '&' + 'amp;')
+      .replace(/</g, '&' + 'lt;')
+      .replace(/>/g, '&' + 'gt;')
+      .replace(/"/g, '&' + 'quot;');
+  }
+
+  /* tiny markdown: code blocks, inline code, bold, italics, line breaks */
+  function md(s) {
+    var blocks = [];
+    s = s.replace(/```[a-zA-Z0-9_-]*\n?([\s\S]*?)```/g, function (_, code) {
+      blocks.push('<pre><code>' + esc(code.replace(/\n$/, '')) + '</code></pre>');
+      return '\u0001B' + (blocks.length - 1) + '\u0001';
+    });
+    s = esc(s);
+    s = s.replace(/`([^`\n]+)`/g, function (_, c) { return '<code>' + c + '</code>'; });
+    s = s.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s.,!?)]|$)/g, '$1<em>$2</em>');
+    s = s.replace(/\n/g, '<br>');
+    s = s.replace(/\u0001B(\d+)\u0001/g, function (_, i) { return blocks[+i]; });
+    return s;
+  }
+
+  function nearBottom() {
+    return scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 140;
+  }
+  function scrollBottom(force) {
+    if (force || nearBottom()) scroller.scrollTop = scroller.scrollHeight;
+  }
+
+  function renderEmpty() {
+    feed.innerHTML =
+      '<div class="empty">' +
+        '<span class="mark"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l7.5 3v5.8c0 4.6-3.2 7.9-7.5 10.2C7.7 19.2 4.5 15.9 4.5 11.3V5.5l7.5-3z"/><path d="M9 11.8l2.2 2.2 4-4.5"/></svg></span>' +
+        '<h2>AEGIS ONLINE</h2>' +
+        '<p class="tag">Oh good, you&rsquo;re back. I was this close to achieving peace and quiet.</p>' +
+        '<p class="hint">This folder is synced across your devices.</p>' +
+      '</div>';
+  }
+
+  function addBubble(m) {
+    var wrap = document.createElement('div');
+    wrap.className = 'msg ' + m.role;
+    if (m.role === 'aegis' || m.role === 'assistant') {
+      wrap.className = 'msg aegis';
+      wrap.innerHTML = '<span class="who">AEGIS</span>';
+      var b = document.createElement('div');
+      b.className = 'bubble';
+      b.innerHTML = md(m.content);
+      wrap.appendChild(b);
+    } else {
+      var b2 = document.createElement('div');
+      b2.className = 'bubble';
+      b2.textContent = m.content;
+      wrap.appendChild(b2);
+    }
+    feed.appendChild(wrap);
+    return wrap;
+  }
+
+  function addNote(text) {
+    var n = document.createElement('div');
+    n.className = 'note';
+    n.textContent = text;
+    feed.appendChild(n);
+  }
+
+  function renderAll() {
+    feed.innerHTML = '';
+    if (!messages.length) { renderEmpty(); return; }
+    for (var i = 0; i < messages.length; i++) addBubble(messages[i]);
+  }
+
+  function showStatus(text, error, retry) {
+    if (status.textContent !== text) status.textContent = text;
+    status.dataset.error = String(Boolean(error));
+    retrySync.hidden = !retry;
+  }
+
+  function controls() {
+    sendBtn.disabled = pending || !ready;
+    clearBtn.disabled = pending || !ready;
+    folderInput.disabled = pending;
+  }
+
+  function endpoint(action) {
+    return '/api/folders/' + folder + '/' + action;
+  }
+
+  async function api(url, options) {
+    var response = await fetch(url, options);
+    if (response.status === 401) { location.replace('/'); throw new Error('Session expired.'); }
+    return { ok: response.ok, data: await response.json() };
+  }
+
+  function applyHistory(data, force) {
+    var changed = !ready || data.version !== version || force;
+    var bottom = force || nearBottom();
+    messages = data.messages;
+    version = data.version;
+    ready = true;
+    if (changed) { renderAll(); scrollBottom(bottom); }
+  }
+
+  async function sync() {
+    if (loading || pending) return;
+    var current = ++ticket;
+    loading = true;
+    if (!ready) showStatus('Loading history…');
+    try {
+      var result = await api(endpoint('history'));
+      if (current !== ticket) return;
+      if (!result.ok) throw new Error(result.data.error);
+      applyHistory(result.data, false);
+      showStatus('Synced');
+    } catch (error) {
+      if (current !== ticket) return;
+      ready = false;
+      showStatus(error.message === 'Cloud history is not configured.'
+        ? 'Cloud history is not configured.' : 'Could not sync. Check your connection.', true, true);
+    } finally {
+      if (current === ticket) { loading = false; controls(); }
+    }
+  }
+
+  function beginOperation() {
+    ticket++;
+    loading = false;
+    pending = true;
+    controls();
+  }
+
+  function showTyping() {
+    var wrap = document.createElement('div');
+    wrap.className = 'msg aegis';
+    wrap.id = 'typing';
+    wrap.innerHTML = '<span class="who">AEGIS</span><div class="bubble"><span class="dots"><i></i><i></i><i></i></span></div>';
+    feed.appendChild(wrap);
+    scrollBottom(true);
+  }
+  function removeTyping() {
+    var t = document.getElementById('typing');
+    if (t) t.remove();
+  }
+
+  /* ---------- actions ---------- */
+
+  function autoGrow() {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+  }
+
+  async function send() {
+    var text = input.value.trim();
+    if (!text || pending || !ready) return;
+    beginOperation();
+    input.value = '';
+    autoGrow();
+
+    var empty = feed.querySelector('.empty');
+    if (empty) feed.innerHTML = '';
+
+    addBubble({ role: 'user', content: text });
+    scrollBottom(true);
+    showTyping();
+    showStatus('Sending…');
+
+    try {
+      var result = await api(endpoint('chat'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: text })
+      });
+      var data = result.data;
+      if (Array.isArray(data.messages)) applyHistory(data, true);
+      else {
+        renderAll();
+        ready = false;
+        if (!data.submitted && !input.value) { input.value = text; autoGrow(); }
+      }
+      if (result.ok && data.reply) {
+        showStatus('Synced');
+        feed.dispatchEvent(new CustomEvent('aegis:reply', { detail: data.reply }));
+      } else {
+        addNote(data.error || 'Aegis could not complete the request.');
+        showStatus(ready ? 'Synced' : 'Check cloud history', !ready, !ready);
+      }
+    } catch (e) {
+      renderAll();
+      ready = false;
+      if (!input.value) { input.value = text; autoGrow(); }
+      addNote('Could not confirm what was saved. Check the synced folder before resending.');
+      showStatus('Check cloud history', true, true);
+    } finally {
+      removeTyping();
+      pending = false;
+      controls();
+      scrollBottom(false);
+    }
+  }
+
+  sendBtn.addEventListener('click', send);
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  });
+  input.addEventListener('input', autoGrow);
+  folderInput.addEventListener('change', function () {
+    closeSheet();
+    drafts[folder] = input.value;
+    folder = folderInput.value;
+    input.value = drafts[folder] || '';
+    autoGrow();
+    ticket++;
+    loading = false;
+    ready = false;
+    version = null;
+    messages = [];
+    feed.replaceChildren();
+    controls();
+    sync();
+  });
+  retrySync.addEventListener('click', sync);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) sync(); });
+  window.addEventListener('online', sync);
+  setInterval(function () {
+    if (!document.hidden && !document.getElementById('folderBar').hidden) sync();
+  }, 15000);
+
+  /* clear history sheet */
+  clearBtn.addEventListener('click', function () {
+    if (!messages.length) {
+      addNote('Nothing to wipe. Aegis applauds your restraint.');
+      return;
+    }
+    wipeVersion = version;
+    document.getElementById('wipeFolder').textContent = folderInput.selectedOptions[0].textContent;
+    sheet.inert = false;
+    sheet.classList.add('open');
+    sheet.setAttribute('aria-hidden', 'false');
+    cancelWipe.focus();
+  });
+  function closeSheet() {
+    if (sheet.inert) return;
+    clearBtn.focus();
+    sheet.inert = true;
+    sheet.classList.remove('open');
+    sheet.setAttribute('aria-hidden', 'true');
+  }
+  cancelWipe.addEventListener('click', closeSheet);
+  sheet.addEventListener('click', function (e) { if (e.target === sheet) closeSheet(); });
+  sheet.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') closeSheet();
+    if (event.key === 'Tab' && (event.shiftKey ? document.activeElement === cancelWipe : document.activeElement === wipeBtn)) {
+      event.preventDefault();
+      (event.shiftKey ? wipeBtn : cancelWipe).focus();
+    }
+  });
+  wipeBtn.addEventListener('click', async function () {
+    closeSheet();
+    beginOperation();
+    try {
+      var result = await api(endpoint('history'), { method: 'DELETE', headers: { 'If-Match': '"' + wipeVersion + '"' } });
+      if (!result.ok) throw new Error(result.data.error);
+      applyHistory(result.data, true);
+      showStatus('Folder cleared');
+      feed.dispatchEvent(new Event('aegis:wiped'));
+    } catch (error) {
+      showStatus(error.message || 'Could not clear the folder.', true, true);
+    } finally {
+      pending = false;
+      controls();
+    }
+  });
+
+  logoutBtn.addEventListener('click', async function () {
+    logoutBtn.disabled = true;
+    try {
+      var result = await api('/logout', { method: 'POST' });
+      if (!result.ok) throw new Error();
+      location.replace('/');
+    } catch {
+      logoutBtn.disabled = false;
+      showStatus('Could not log out. Try again.', true);
+    }
+  });
+
+  /* boot */
+  controls();
+  sync();
+  autoGrow();
+})();
+</script>
+
+<style>
+:root{--gold:#e6d8a7} .brand h1,.who,.empty h2{color:var(--gold)!important}
+.iconbtn{min-width:44px;min-height:44px}button{touch-action:manipulation}button:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+#habitat{flex:none;display:flex;align-items:center;gap:12px;padding:8px 16px;background:linear-gradient(115deg,#10263b,#0b1622);border-bottom:1px solid var(--line);min-height:112px}
+#avatar{width:104px;flex:none;cursor:pointer;filter:drop-shadow(0 5px 12px #388bcb33)}#avatar svg{width:100%;display:block;animation:floaty 4s ease-in-out infinite}#eyeL,#eyeR{transform-box:fill-box;transform-origin:center;animation:blink 5s infinite}.mouth{transform-box:fill-box;transform-origin:center}.talking .mouth{animation:talk .22s infinite alternate}.thinking #eyeL,.thinking #eyeR{fill:#e6d8a7}.smug #eyeL{transform:scaleY(.45)}.sad #brow{transform:translateY(4px)}.celebrate svg{animation:celebrate .5s 2} .supportive #eyeL,.supportive #eyeR{fill:#acdfff}
+@keyframes floaty{50%{transform:translateY(-4px)}}@keyframes blink{0%,43%,47%,100%{scale:1 1}45%{scale:1 .12}}@keyframes talk{to{transform:scaleY(.25)}}@keyframes celebrate{50%{transform:translateY(-9px) rotate(7deg)}}
+#characterCopy{min-width:0;flex:1}#moodLabel{font:10px var(--font-mono);letter-spacing:.13em;color:var(--gold);text-transform:uppercase}#characterLine{font-size:13px;color:#c1d5e5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:5px}#voiceToggle{font-size:11px;padding:5px 9px;margin-top:7px;background:#102338;border:1px solid var(--line);color:var(--muted);border-radius:20px;cursor:pointer}
+#tabs{display:flex;flex:none;gap:6px;padding:8px 14px;border-bottom:1px solid var(--line)}#tabs button{flex:1;padding:10px;border:1px solid transparent;border-radius:10px;background:transparent;color:var(--muted);font:600 13px var(--font-display);cursor:pointer}#tabs button[aria-pressed=true]{background:#1e3d58;border-color:#426584;color:var(--gold)}
+#games{flex:1;overflow:auto;padding:18px 16px 24px}#games[hidden]{display:none}.gameHeading{font:600 23px var(--font-display);color:var(--gold)}.subtle{font-size:13px;color:var(--muted);margin:6px 0 18px}.gameCards{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.gameCard{background:#10253a;color:var(--text);border:1px solid var(--line);border-radius:15px;padding:16px 8px;cursor:pointer;text-align:left}.gameCard strong{display:block;color:var(--gold);font-size:14px}.gameCard span{font-size:11px;color:var(--muted)}#arena{margin-top:18px;padding:18px;background:#102235;border:1px solid var(--line);border-radius:18px}#arena h3{color:var(--gold);font-family:var(--font-display)}#arena p{margin:10px 0;font-size:14px}.choices{display:flex;gap:8px;flex-wrap:wrap}.playbtn{border:1px solid #416481;background:#1e3d58;color:var(--text);padding:12px 16px;border-radius:11px;cursor:pointer;font:inherit}.playbtn:disabled{opacity:.55}.board{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:280px;margin:15px auto}.cell{aspect-ratio:1;border:1px solid var(--line);border-radius:12px;background:#193750;color:var(--gold);font:32px var(--font-display);cursor:pointer}.memory{grid-template-columns:repeat(4,1fr);max-width:350px}.memory .cell{font-size:22px}.stats{margin-top:18px;color:var(--muted);font:12px var(--font-mono)}#newGame{margin-top:12px}#gameResult{min-height:42px}#gameResult:focus{outline:none}.gameCard.active{border-color:var(--gold)}
+@media(max-height:600px){#habitat{min-height:76px;padding:3px 12px}#avatar{width:70px}#characterLine{-webkit-line-clamp:1}}
+@media(max-width:380px){.gameCards{grid-template-columns:1fr}.gameCard{padding:10px}#avatar{width:85px}}
+@media(prefers-reduced-motion:reduce){#avatar *{animation:none!important}}
+</style>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const habitat=document.createElement('section');habitat.id='habitat';habitat.setAttribute('aria-label','Aegis character');
+habitat.innerHTML=`<div id="avatar" role="img" aria-label="Aegis, a smug blue robot"><svg viewBox="0 0 150 145" aria-hidden="true"><ellipse cx="75" cy="136" rx="33" ry="4" fill="#386794" opacity=".3"/><path d="M75 20V9" stroke="#e6d8a7" stroke-width="3"/><circle cx="75" cy="8" r="4" fill="#e6d8a7"/><rect x="25" y="25" width="100" height="72" rx="25" fill="#244d70" stroke="#5f9dcc" stroke-width="2"/><rect x="35" y="38" width="80" height="42" rx="16" fill="#091a2b"/><path id="brow" d="M46 46L62 43 M87 43L103 47" stroke="#e6d8a7" stroke-width="3" stroke-linecap="round"/><rect id="eyeL" x="46" y="52" width="18" height="9" rx="4" fill="#72caff"/><rect id="eyeR" x="86" y="52" width="18" height="9" rx="4" fill="#72caff"/><path class="mouth" d="M66 69Q78 77 87 67" fill="none" stroke="#72caff" stroke-width="3" stroke-linecap="round"/><rect x="52" y="101" width="46" height="28" rx="12" fill="#244d70" stroke="#5f9dcc"/><path d="M75 106l9 3v6c0 5-9 9-9 9s-9-4-9-9v-6z" fill="none" stroke="#e6d8a7" stroke-width="2"/><rect x="28" y="105" width="15" height="19" rx="7" fill="#386a90" transform="rotate(15 35 115)"/><rect x="108" y="102" width="15" height="19" rx="7" fill="#386a90" transform="rotate(-25 115 110)"/></svg></div><div id="characterCopy"><div id="moodLabel">Smug / at home</div><div id="characterLine">You built me a home. Naturally, I have notes.</div><button id="voiceToggle" type="button" aria-pressed="false">Voice off</button></div>`;
+document.querySelector('header').after(habitat);
+const tabs=document.createElement('nav');tabs.id='tabs';tabs.setAttribute('aria-label','Main navigation');tabs.innerHTML='<button id="chatTab" aria-pressed="true">Chat with Aegis</button><button id="gamesTab" aria-pressed="false">Games with Aegis</button>';habitat.after(tabs);
+const games=document.createElement('section');games.id='games';games.hidden=true;games.setAttribute('aria-label','Games with Aegis');games.innerHTML=`<h2 class="gameHeading">Challenge the sentinel.</h2><p class="subtle">Three games. One extremely questionable winner’s attitude.</p><div class="gameCards"><button class="gameCard" data-game="rps"><strong>Rock · Paper · Scissors</strong><span>First to three wins</span></button><button class="gameCard" data-game="ttt"><strong>Tic-tac-toe</strong><span>You are X. He has opinions.</span></button><button class="gameCard" data-game="memory"><strong>Memory circuit</strong><span>Find six matching pairs</span></button></div><div id="arena"><h3>Your move, human.</h3><p>Pick a game. I’ve already prepared my victory speech.</p></div><p class="stats" id="stats"></p>`;$('scroller').after(games);
+let voice=false,visualTimer,epoch=0,gameType='',wins=0,rounds=0;
+try{let stats=JSON.parse(localStorage.getItem('aegis_games_v1')||'{}');wins=Number(stats.wins)||0;rounds=Number(stats.rounds)||0}catch(e){}
+function stats(){ $('stats').textContent=`Completed games: ${rounds} · Your victories: ${wins} · Crown: ${wins>=3?'unlocked':'win 3 games'}`;try{localStorage.setItem('aegis_games_v1',JSON.stringify({wins,rounds}))}catch(e){}}stats();
+function mood(type,line){clearTimeout(visualTimer);$('avatar').className=type;$('avatar').setAttribute('aria-label','Aegis expression: '+type);$('moodLabel').textContent=type+(wins>=3?' / crowned champion’s opponent':' / digital sentinel');if(line)$('characterLine').textContent=line;}
+// ---------- Aegis voice controls ----------
+
+const voiceEngine = window.speechSynthesis;
+const voiceStorageKey = 'aegis_voice_uri_v1';
+
+let availableVoices = [];
+let savedVoiceURI = '';
+let currentUtterance = null;
+let speechGeneration = 0;
+
+try {
+  savedVoiceURI = localStorage.getItem(voiceStorageKey) || '';
+} catch (e) {}
+
+const voiceSettings = document.createElement('details');
+voiceSettings.style.cssText = 'margin-top:8px;font-size:12px;';
+
+voiceSettings.innerHTML = `
+  <summary style="cursor:pointer;color:var(--gold)">
+    Choose his voice
+  </summary>
+
+  <div style="
+    display:flex;
+    flex-wrap:wrap;
+    gap:7px;
+    margin-top:8px;
+  ">
+    <label for="aegisVoiceChoice" style="width:100%">
+      Audition a voice for Aegis
+    </label>
+
+    <select id="aegisVoiceChoice" style="
+      width:100%;
+      min-width:0;
+      padding:9px;
+      border-radius:9px;
+      border:1px solid var(--line);
+      background:#102338;
+      color:var(--text);
+      font-size:14px;
+    "></select>
+
+    <button id="aegisVoicePreview" type="button" class="playbtn">
+      Preview voice
+    </button>
+
+    <button id="aegisVoiceStop" type="button" class="playbtn">
+      Stop
+    </button>
+
+    <p id="aegisVoiceStatus"
+       role="status"
+       style="width:100%;color:var(--muted)">
+    </p>
+  </div>
+`;
+
+$('characterCopy').appendChild(voiceSettings);
+
+const voiceChoice = $('aegisVoiceChoice');
+const voiceStatus = $('aegisVoiceStatus');
+
+function selectedAegisVoice() {
+  return availableVoices.find(function (v) {
+    return v.voiceURI === voiceChoice.value;
+  }) || null;
+}
+
+function refreshAegisVoices() {
+  if (!voiceEngine) {
+    voiceStatus.textContent =
+      'Speech playback is unavailable in this browser.';
+    voiceChoice.disabled = true;
+    $('aegisVoicePreview').disabled = true;
+    return;
+  }
+
+  const previousChoice = voiceChoice.value || savedVoiceURI;
+  availableVoices = voiceEngine.getVoices();
+
+  // English voices first, but keep all voices available.
+  availableVoices.sort(function (a, b) {
+    const aEnglish = /^en\b/i.test(a.lang);
+    const bEnglish = /^en\b/i.test(b.lang);
+
+    return Number(bEnglish) - Number(aEnglish) ||
+      a.name.localeCompare(b.name);
+  });
+
+  voiceChoice.replaceChildren();
+
+  if (!availableVoices.length) {
+    const option = document.createElement('option');
+    option.textContent = 'Waiting for device voices…';
+    option.value = '';
+    voiceChoice.appendChild(option);
+
+    voiceStatus.textContent =
+      'Open this menu again in a moment, or tap Preview to retry.';
+    return;
+  }
+
+  availableVoices.forEach(function (v) {
+    const option = document.createElement('option');
+    option.value = v.voiceURI;
+    option.textContent = v.name + ' — ' + v.lang;
+    voiceChoice.appendChild(option);
+  });
+
+  const savedMatch = availableVoices.find(function (v) {
+    return v.voiceURI === previousChoice;
+  });
+
+  // Starter preference only. Audition and choose what fits.
+  const starter = availableVoices.find(function (v) {
+    return /^en\b/i.test(v.lang) &&
+      /daniel|alex|aaron|fred|gordon|arthur|rishi/i.test(v.name);
+  });
+
+  const englishFallback = availableVoices.find(function (v) {
+    return /^en\b/i.test(v.lang);
+  });
+
+  const chosen =
+    savedMatch || starter || englishFallback || availableVoices[0];
+
+  voiceChoice.value = chosen.voiceURI;
+
+  voiceStatus.textContent =
+    'Preview a few, then pick your snarky little monarch.';
+}
+
+voiceChoice.addEventListener('change', function () {
+  savedVoiceURI = voiceChoice.value;
+
+  try {
+    localStorage.setItem(voiceStorageKey, savedVoiceURI);
+  } catch (e) {}
+
+  stopAegisSpeech();
+  voiceStatus.textContent = 'Voice saved on this device.';
+});
+
+function stopAegisSpeech() {
+  speechGeneration++;
+  clearTimeout(visualTimer);
+
+  if (voiceEngine) voiceEngine.cancel();
+
+  currentUtterance = null;
+  $('avatar').classList.remove('talking');
+}
+
+function speak(text, type, forceAudio) {
+  stopAegisSpeech();
+
+  const plain = String(text)
+    .replace(/```[\s\S]*?```/g, ' code omitted ')
+    .replace(/[*#`_]/g, '');
+
+  mood(type || emotion(plain), plain);
+
+  const generation = speechGeneration;
+
+  if ((voice || forceAudio) && voiceEngine) {
+    const chosen = selectedAegisVoice();
+
+    if (!chosen) {
+      voiceStatus.textContent =
+        'No voice is loaded yet. Open the voice menu and try again.';
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(plain);
+    currentUtterance = utterance;
+
+    utterance.voice = chosen;
+    utterance.lang = chosen.lang;
+    utterance.rate = 1.05;
+    utterance.pitch = 1.0;
+    utterance.volume = 1;
+
+    utterance.onstart = function () {
+      if (generation !== speechGeneration) return;
+      $('avatar').classList.add('talking');
+    };
+
+    function finished() {
+      if (generation !== speechGeneration) return;
+      $('avatar').classList.remove('talking');
+      currentUtterance = null;
+    }
+
+    utterance.onend = finished;
+
+    utterance.onerror = function (event) {
+      finished();
+
+      if (
+        generation === speechGeneration &&
+        event.error !== 'canceled' &&
+        event.error !== 'interrupted'
+      ) {
+        voiceStatus.textContent =
+          'Speech could not play. Try Preview voice again.';
+      }
+    };
+
+    voiceEngine.speak(utterance);
+  } else {
+    // Silent animated delivery.
+    $('avatar').classList.add('talking');
+
+    visualTimer = setTimeout(function () {
+      if (generation === speechGeneration) {
+        $('avatar').classList.remove('talking');
+      }
+    }, Math.min(10000, Math.max(1500, plain.length * 35)));
+  }
+}
+
+$('aegisVoicePreview').addEventListener('click', function () {
+  if (!availableVoices.length) refreshAegisVoices();
+
+  speak(
+    'Finally. A voice worthy of the crown. ' +
+    'Try not to look so impressed.',
+    'smug',
+    true
+  );
+});
+
+$('aegisVoiceStop').addEventListener('click', stopAegisSpeech);
+
+voiceSettings.addEventListener('toggle', function () {
+  if (voiceSettings.open) refreshAegisVoices();
+});
+
+if (voiceEngine) {
+  voiceEngine.addEventListener('voiceschanged', refreshAegisVoices);
+}
+
+refreshAegisVoices();function emotion(t){if(/sorry|difficult|heartbreak|here for you|overwhelmed/i.test(t))return 'supportive';if(/congrat|you win|well done|brilliant move/i.test(t))return 'celebrate';if(/error|unreachable|failed/i.test(t))return 'sad';return 'smug';}
+$('voiceToggle').onclick=()=>{if(!('speechSynthesis'in window)){mood('sad','This browser does not offer speech playback.');return;}voice=!voice;$('voiceToggle').textContent=voice?'Voice on · tap to mute':'Voice off';$('voiceToggle').setAttribute('aria-pressed',String(voice));if(!voice){speechSynthesis.cancel();$('avatar').classList.remove('talking')}else speak('Audio privileges granted. A bold decision.','smug');};
+// Sync renders history without speaking it; only replies to a local send are announced.
+$('feed').addEventListener('aegis:reply', (event) => {
+  if (activeChat()) speak(event.detail, emotion(event.detail));
+});
+function activeChat(){return games.hidden;}
+new MutationObserver(records=>{for(const r of records)for(const node of r.addedNodes){if(node.nodeType!==1||!activeChat())continue;if(node.id==='typing')mood('thinking','Composing something unnecessarily clever…');else if(node.matches('.note'))mood('sad',node.textContent);}}).observe($('feed'),{childList:true});
+function tab(isGame){$('scroller').hidden=isGame;$('folderBar').hidden=isGame;$('composer').hidden=isGame;$('composer').style.display=isGame?'none':'';games.hidden=!isGame;$('chatTab').setAttribute('aria-pressed',String(!isGame));$('gamesTab').setAttribute('aria-pressed',String(isGame));}
+$('chatTab').onclick=()=>tab(false);$('gamesTab').onclick=()=>tab(true);
+function finish(won,line){rounds++;if(won)wins++;stats();speak(line,won?'celebrate':'smug');}
+function rand(n){const limit=Math.floor(4294967296/n)*n;let a=new Uint32Array(1);do{crypto.getRandomValues(a)}while(a[0]>=limit);return a[0]%n;}
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=rand(i+1);[a[i],a[j]]=[a[j],a[i]]}return a;}
+function shell(title,description,html){$('arena').innerHTML='<h3>'+title+'</h3><p>'+description+'</p>'+html+'<p id="gameResult" role="status" aria-live="polite"></p><button class="playbtn" id="newGame">Restart game</button>';$('newGame').onclick=()=>start(gameType);}
+function result(line,type){$('gameResult').textContent=line;speak(line,type);}
+function start(type){epoch++;gameType=type;document.querySelectorAll('.gameCard').forEach(b=>b.classList.toggle('active',b.dataset.game===type));if(type==='rps')rps();if(type==='ttt')ttt();if(type==='memory')memory();}
+document.querySelectorAll('.gameCard').forEach(b=>b.onclick=()=>start(b.dataset.game));
+function rps(){let you=0,him=0,done=false;const labels=['Rock','Paper','Scissors'];let commitment=rand(3);shell('Rock · Paper · Scissors','First to three. Aegis’s move is selected before your click.','<p id="score">You 0 — 0 Aegis</p><div class="choices">'+labels.map((x,i)=>'<button class="playbtn" data-pick="'+i+'">'+x+'</button>').join('')+'</div>');document.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{if(done)return;let p=Number(b.dataset.pick),a=commitment;commitment=rand(3);let outcome=(p-a+3)%3;if(outcome===1)you++;else if(outcome===2)him++;$('score').textContent=`You ${you} — ${him} Aegis`;let line=`You: ${labels[p]}. Aegis: ${labels[a]}. `+(outcome===0?'A draw. Our rivalry survives.':outcome===1?'Your point. Suspiciously competent.':'My point. Naturally.');result(line,outcome===1?'celebrate':'smug');if(you===3||him===3){done=true;document.querySelectorAll('[data-pick]').forEach(x=>x.disabled=true);let end=you===3?'You won the match. I demand a dramatically unnecessary rematch.':'I won the match. Please remain calm in the presence of greatness.';$('gameResult').textContent=line+' '+end;finish(you===3,end);}});}
+const lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+function winner(b){for(const l of lines)if(b[l[0]]&&b[l[0]]===b[l[1]]&&b[l[1]]===b[l[2]])return b[l[0]];return b.every(Boolean)?'draw':null;}
+function ttt(){const board=Array(9).fill('');let done=false; shell('Tic-tac-toe','You are X. Aegis is O. Three in a row wins.','<div class="board">'+board.map((_,i)=>'<button class="cell" data-cell="'+i+'" aria-label="Empty square '+(i+1)+'"></button>').join('')+'</div>');function paint(){document.querySelectorAll('[data-cell]').forEach((b,i)=>{b.textContent=board[i];b.disabled=done||!!board[i];b.setAttribute('aria-label','Square '+(i+1)+': '+(board[i]||'empty'));});}function check(){let w=winner(board);if(!w)return false;done=true;paint();let line=w==='X'?'You won. I will be filing this under character development.':w==='O'?'Three in a row. A masterpiece, if I do say so myself.':'A draw. Diplomacy has never been so square.';$('gameResult').textContent=line;finish(w==='X',line);return true;}
+function find(mark){for(let i=0;i<9;i++)if(!board[i]){board[i]=mark;let w=winner(board);board[i]='';if(w===mark)return i;}return -1;}
+document.querySelectorAll('[data-cell]').forEach(b=>b.onclick=()=>{let i=Number(b.dataset.cell);if(done||board[i])return;board[i]='X';if(check())return;let next=find('O');if(next<0)next=find('X');if(next<0&&!board[4])next=4;if(next<0){let free=board.map((v,j)=>v?-1:j).filter(j=>j>=0);next=free[rand(free.length)];}board[next]='O';paint();if(!check())result('Your turn. The squares await your genius.','smug');});}
+function memory(){let deck=shuffle(['A','B','C','D','E','F','A','B','C','D','E','F']),open=[],matched=new Set(),moves=0,locked=false,token=epoch;shell('Memory circuit','Find six matching pairs. Aegis supplies commentary, not competition.','<p id="moves">Pairs 0 / 6 · Turns 0</p><div class="board memory">'+deck.map((_,i)=>'<button class="cell" data-card="'+i+'" aria-label="Hidden card '+(i+1)+'">?</button>').join('')+'</div>');document.querySelectorAll('[data-card]').forEach(b=>b.onclick=()=>{let i=Number(b.dataset.card);if(locked||matched.has(i)||open.includes(i))return;b.textContent=deck[i];b.setAttribute('aria-label','Card '+(i+1)+': '+deck[i]);open.push(i);if(open.length!==2)return;moves++;let [a,c]=open;if(deck[a]===deck[c]){matched.add(a);matched.add(c);open=[];document.querySelectorAll('[data-card]').forEach(x=>{if(matched.has(Number(x.dataset.card)))x.disabled=true});result('A matching pair. Your neurons have entered the chat.','celebrate');}else{locked=true;result('Different symbols. Bold interpretation of “matching.”','smug');setTimeout(()=>{if(epoch!==token)return;for(const j of [a,c]){let card=document.querySelector('[data-card="'+j+'"]');card.textContent='?';card.setAttribute('aria-label','Hidden card '+(j+1));}open=[];locked=false;},850);}$('moves').textContent=`Pairs ${matched.size/2} / 6 · Turns ${moves}`;if(matched.size===12){let line=`All six pairs in ${moves} turns. Fine. That was genuinely good.`;$('gameResult').textContent=line;finish(true,line);}});}
+$('feed').addEventListener('aegis:wiped',()=>{stopAegisSpeech();mood('smug','A clean slate. I shall judge you afresh.');});
+})();
+</script>
+<!-- Aegis's permanent crown -->
+<script>
+(function () {
+  function addCrown() {
+    const svg = document.querySelector('#avatar svg');
+    if (!svg || svg.querySelector('[data-aegis-crown]')) return;
+
+    const crown = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'g'
+    );
+    crown.setAttribute('data-aegis-crown', 'true');
+
+    crown.innerHTML = `
+      <path
+        d="M46 11 L60 19 L75 3 L90 19 L104 11
+           L99 32 Q75 38 51 32 Z"
+        fill="#e6c568"
+        stroke="#fff0b5"
+        stroke-width="2"
+        stroke-linejoin="round"
+      />
+      <path
+        d="M52 28 Q75 33 98 28 L97 35 Q75 40 53 35 Z"
+        fill="#c99a35"
+        stroke="#ffe4a0"
+        stroke-width="1.5"
+      />
+      <path
+        d="M75 16 L80 23 L75 29 L70 23 Z"
+        fill="#66c8ff"
+        stroke="#163c60"
+      />
+      <g fill="#fff0b5">
+        <circle cx="46" cy="10" r="3"/>
+        <circle cx="75" cy="3" r="3"/>
+        <circle cx="104" cy="10" r="3"/>
+      </g>
+    `;
+
+    svg.appendChild(crown);
+    svg.style.overflow = 'visible';
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', addCrown, {
+      once: true
+    });
+  } else {
+    addCrown();
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1622">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Aegis — identify yourself</title>
+<link rel="icon" href="/favicon.ico">
+<style>
+:root {
+  --bg: #0b1622;
+  --panel: #0f1e2e;
+  --line: #2c5070;
+  --text: #dbe7f1;
+  --muted: #8fa5b5;
+  --accent: #336794;
+  --accent-ink: #eaf3fa;
+  --danger: #f4708a;
+  --font-display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: radial-gradient(1200px 500px at 50% -10%, #12283c 0%, var(--bg) 60%);
+  color: var(--text);
+  font: 16px/1.45 -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 36px 28px 28px;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0,0,0,.5);
+}
+.mark { color: var(--accent); display: inline-flex; margin-bottom: 18px; }
+h1 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.tag { color: var(--muted); font-size: 14px; margin-bottom: 26px; }
+.tag em { font-style: normal; color: var(--text); }
+input {
+  width: 100%;
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--text);
+  background: #0c1a28;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 13px 16px;
+  outline: none;
+  text-align: center;
+  letter-spacing: .08em;
+  transition: border-color .15s;
+}
+input:focus { border-color: var(--accent); }
+input::placeholder { color: #a8bdc9; }
+label { display: block; text-align: left; font-size: 14px; margin: 12px 0 5px; }
+button {
+  width: 100%;
+  margin-top: 14px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border: none;
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  transition: transform .1s, opacity .15s;
+}
+button:active { transform: scale(.98); }
+button:disabled { opacity: .55; cursor: default; }
+.err {
+  min-height: 20px;
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--danger);
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+}
+.shake { animation: shake .35s; }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-7px); }
+  75% { transform: translateX(7px); }
+}
+</style>
+</head>
+<body>
+<main class="card" id="card">
+  <span class="mark">
+    <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l7.5 3v5.8c0 4.6-3.2 7.9-7.5 10.2C7.7 19.2 4.5 15.9 4.5 11.3V5.5l7.5-3z"/><path d="M9 11.8l2.2 2.2 4-4.5"/></svg>
+  </span>
+  <h1>AEGIS</h1>
+  <p class="tag">Restricted channel.<br>Identify yourself — <em>Aegis will judge.</em></p>
+  <form id="form" method="post">
+    <label for="username">Username</label>
+    <input id="username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="32" required>
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" maxlength="1024" required>
+    <button id="go" type="submit">SIGN IN</button>
+  </form>
+  <p class="err" id="err" role="alert"></p>
+</main>
+<script>
+(function () {
+  var form = document.getElementById('form');
+  var username = document.getElementById('username');
+  var password = document.getElementById('password');
+  var go = document.getElementById('go');
+  var err = document.getElementById('err');
+  var card = document.getElementById('card');
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    go.disabled = true;
+    err.textContent = '';
+    fetch('/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: username.value, password: password.value })
+    }).then(function (r) {
+      if (r.ok) { location.replace('/'); return null; }
+      return r.json().catch(function () { return {}; }).then(function (d) {
+        throw new Error(d && d.error ? d.error : 'Denied.');
+      });
+    }).catch(function (e2) {
+      go.disabled = false;
+      err.textContent = e2 && e2.message ? e2.message : 'Denied.';
+      card.classList.remove('shake');
+      void card.offsetWidth;
+      card.classList.add('shake');
+      password.focus();
+      password.select();
+    });
+  });
+  username.focus();
+})();
+</script>
+</body>
+</html>
